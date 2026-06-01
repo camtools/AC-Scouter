@@ -1,9 +1,10 @@
-const CACHE_NAME = 'ac-scouter-v1';
+const CACHE_NAME = 'ac-scouter-v2';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './script.js',
+  './jspdf.umd.min.js',
   './favicon.png'
 ];
 
