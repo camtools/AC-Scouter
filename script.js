@@ -418,3 +418,540 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.log('Errore PWA:', err));
   });
 }
+/* ==========================================
+   WITNESS MARKS — Logica (aggiunta a AC Scouter)
+   Tutte le funzioni e variabili hanno prefisso wmm_
+   per non interferire con il codice esistente.
+   ========================================== */
+
+const WMM_KEY = 'wmm_cards_v1';
+const WMM_SECTIONS = ['camera', 'settings', 'optics', 'gps', 'notes', 'image'];
+const WMM_REQUIRED = {
+    camera:   ['camera.model','camera.height','camera.distance','camera.angle'],
+    settings: ['settings.fps','settings.shutter','settings.iso','settings.kelvin','settings.codec'],
+    optics:   ['optics.focal','optics.tstop','optics.series','optics.focusDistance'],
+    gps:      ['gps.lat'],
+    notes:    ['notes'],
+    image:    ['image']
+};
+
+let wmm_cards = [];
+let wmm_currentId = null;
+let wmm_saveTimer = null;
+
+/* ---- Utility ---- */
+function wmm_uid() {
+    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+function wmm_getField(obj, path) {
+    return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
+}
+function wmm_setField(obj, path, val) {
+    const keys = path.split('.');
+    let o = obj;
+    for (let i = 0; i < keys.length - 1; i++) {
+        if (o[keys[i]] == null || typeof o[keys[i]] !== 'object') o[keys[i]] = {};
+        o = o[keys[i]];
+    }
+    o[keys[keys.length - 1]] = val;
+}
+function wmm_filled(v) {
+    return v !== undefined && v !== null && String(v).trim() !== '';
+}
+function wmm_fmtDate(ts) {
+    return new Date(ts).toLocaleString('it-IT', {
+        day:'2-digit', month:'2-digit', year:'numeric',
+        hour:'2-digit', minute:'2-digit'
+    });
+}
+function wmm_esc(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])
+    );
+}
+
+/* ---- Storage ---- */
+function wmmLoadCards() {
+    try {
+        const raw = localStorage.getItem(WMM_KEY);
+        wmm_cards = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(wmm_cards)) wmm_cards = [];
+    } catch(e) { wmm_cards = []; }
+}
+function wmmPersist() {
+    try {
+        localStorage.setItem(WMM_KEY, JSON.stringify(wmm_cards));
+        return true;
+    } catch(e) {
+        alert('Memoria piena: impossibile salvare. Esporta o elimina schede con foto.');
+        return false;
+    }
+}
+function wmm_getCurrent() {
+    return wmm_cards.find(c => c.id === wmm_currentId) || null;
+}
+
+/* ---- Completamento ---- */
+function wmm_isSectionComplete(card, sec) {
+    if (!card) return false;
+    return WMM_REQUIRED[sec].every(path => wmm_filled(wmm_getField(card, path)));
+}
+function wmm_countComplete(card) {
+    return WMM_SECTIONS.filter(s => wmm_isSectionComplete(card, s)).length;
+}
+function wmm_refreshCompleteness() {
+    const card = wmm_getCurrent();
+    document.querySelectorAll('#wmm-card-content .wmm-section').forEach(sec => {
+        const name = sec.dataset.wmmSection;
+        sec.classList.toggle('complete', wmm_isSectionComplete(card, name));
+    });
+    const n = wmm_countComplete(card);
+    const el = document.getElementById('wmm-progress-count');
+    if (el) el.textContent = n + ' / 6';
+}
+
+/* ==========================================
+   NAVIGAZIONE
+   ========================================== */
+function openWmmList() {
+    renderWmmList();
+    showPage('wmm-list-page');
+}
+
+/* ==========================================
+   LISTA SCHEDE
+   ========================================== */
+function renderWmmList() {
+    const listEl  = document.getElementById('wmm-cards-list');
+    const emptyEl = document.getElementById('wmm-empty-state');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    const sorted = [...wmm_cards].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    emptyEl.style.display = sorted.length ? 'none' : 'block';
+
+    sorted.forEach(card => {
+        const n     = wmm_countComplete(card);
+        const scene = wmm_filled(card.scene) ? card.scene : 'Senza scena';
+        const take  = wmm_filled(card.take)  ? card.take  : '—';
+
+        const item  = document.createElement('div');
+        item.className = 'card-item';
+        item.onclick = () => wmmOpenCard(card.id);
+
+        const main  = document.createElement('div');
+        main.className = 'ci-main';
+        main.innerHTML =
+            '<div class="ci-title">' + wmm_esc(scene) +
+            ' <span class="ci-take">· T' + wmm_esc(take) + '</span></div>' +
+            '<div class="ci-meta">' + (card.updatedAt ? wmm_fmtDate(card.updatedAt) : '') + '</div>';
+
+        const badge = document.createElement('div');
+        badge.className = 'ci-badge' + (n === 6 ? ' done' : '');
+        badge.textContent = n + '/6';
+
+        const del = document.createElement('button');
+        del.className = 'ci-del';
+        del.textContent = '🗑';
+        del.onclick = (e) => { e.stopPropagation(); wmmDeleteCard(card.id); };
+
+        item.appendChild(main);
+        item.appendChild(badge);
+        item.appendChild(del);
+        listEl.appendChild(item);
+    });
+}
+
+/* ==========================================
+   EDITOR SCHEDA
+   ========================================== */
+function wmmNewCard() {
+    const card = { id: wmm_uid(), scene:'', take:'', updatedAt: Date.now() };
+    wmm_cards.push(card);
+    wmm_currentId = card.id;
+    wmmPersist();
+    wmm_populateFields(card);
+    showPage('wmm-card-page');
+}
+function wmmOpenCard(id) {
+    wmm_currentId = id;
+    const card = wmm_getCurrent();
+    if (!card) { openWmmList(); return; }
+    wmm_populateFields(card);
+    showPage('wmm-card-page');
+}
+function wmmCloseCard() {
+    wmm_flushSave();
+    wmm_currentId = null;
+    openWmmList();
+}
+
+function wmm_populateFields(card) {
+    document.querySelectorAll('#wmm-card-content [data-wmm]').forEach(el => {
+        const val = wmm_getField(card, el.dataset.wmm);
+        el.value = wmm_filled(val) ? val : '';
+    });
+    document.querySelectorAll('#wmm-card-content .wmm-section').forEach(s => s.classList.remove('open'));
+    wmm_renderGPS();
+    wmm_renderImage();
+    wmm_refreshCompleteness();
+    wmm_updateTitle();
+}
+function wmm_updateTitle() {
+    const card = wmm_getCurrent();
+    const el   = document.getElementById('wmm-card-title');
+    if (!card || !el) return;
+    const s = wmm_filled(card.scene) ? 'SC ' + card.scene : 'SCHEDA';
+    const t = wmm_filled(card.take)  ? ' · T' + card.take  : '';
+    el.textContent = s + t;
+}
+function wmmToggleSection(headEl) {
+    headEl.parentElement.classList.toggle('open');
+}
+
+function wmmOnChange() {
+    const card = wmm_getCurrent();
+    if (!card) return;
+    document.querySelectorAll('#wmm-card-content [data-wmm]').forEach(el => {
+        wmm_setField(card, el.dataset.wmm, el.value);
+    });
+    card.updatedAt = Date.now();
+    wmm_refreshCompleteness();
+    wmm_updateTitle();
+    clearTimeout(wmm_saveTimer);
+    wmm_saveTimer = setTimeout(wmmPersist, 400);
+}
+function wmm_flushSave() {
+    clearTimeout(wmm_saveTimer);
+    const card = wmm_getCurrent();
+    if (card) {
+        document.querySelectorAll('#wmm-card-content [data-wmm]').forEach(el => {
+            wmm_setField(card, el.dataset.wmm, el.value);
+        });
+        card.updatedAt = Date.now();
+    }
+    wmmPersist();
+}
+
+function wmmDeleteCard(id) {
+    const card = wmm_cards.find(c => c.id === id);
+    const name = card && wmm_filled(card.scene) ? 'Scena ' + card.scene : 'questa scheda';
+    if (!confirm('Eliminare ' + name + '? L\'azione non è reversibile.')) return;
+    wmm_cards = wmm_cards.filter(c => c.id !== id);
+    wmmPersist();
+    renderWmmList();
+}
+function wmmDeleteCurrent() {
+    const id   = wmm_currentId;
+    const card = wmm_getCurrent();
+    const name = card && wmm_filled(card.scene) ? 'Scena ' + card.scene : 'questa scheda';
+    if (!confirm('Eliminare ' + name + '? L\'azione non è reversibile.')) return;
+    wmm_cards = wmm_cards.filter(c => c.id !== id);
+    wmm_currentId = null;
+    wmmPersist();
+    openWmmList();
+}
+
+/* ==========================================
+   GPS
+   ========================================== */
+function wmmCaptureGPS() {
+    const btn = document.getElementById('wmm-gps-btn');
+    if (!('geolocation' in navigator)) {
+        alert('Geolocalizzazione non disponibile su questo dispositivo.');
+        return;
+    }
+    if (btn) btn.textContent = 'RILEVAMENTO…';
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            const card = wmm_getCurrent();
+            if (!card) return;
+            card.gps = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                acc: pos.coords.accuracy,
+                at:  Date.now()
+            };
+            card.updatedAt = Date.now();
+            wmmPersist();
+            wmm_renderGPS();
+            wmm_refreshCompleteness();
+            if (navigator.vibrate) navigator.vibrate(40);
+        },
+        err => {
+            if (btn) btn.textContent = 'CATTURA POSIZIONE';
+            alert('Impossibile ottenere la posizione: ' + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+}
+function wmmClearGPS() {
+    const card = wmm_getCurrent();
+    if (!card) return;
+    delete card.gps;
+    card.updatedAt = Date.now();
+    wmmPersist();
+    wmm_renderGPS();
+    wmm_refreshCompleteness();
+}
+function wmm_renderGPS() {
+    const card    = wmm_getCurrent();
+    const readout = document.getElementById('wmm-gps-readout');
+    const btn     = document.getElementById('wmm-gps-btn');
+    const g       = card && card.gps;
+    if (g && wmm_filled(g.lat)) {
+        if (readout) readout.classList.remove('hidden');
+        const latEl  = document.getElementById('wmm-gps-lat');
+        const lngEl  = document.getElementById('wmm-gps-lng');
+        const timeEl = document.getElementById('wmm-gps-time');
+        if (latEl)  latEl.textContent  = Number(g.lat).toFixed(6) + '°';
+        if (lngEl)  lngEl.textContent  = Number(g.lng).toFixed(6) + '°';
+        if (timeEl) timeEl.textContent = g.at ? wmm_fmtDate(g.at) : '—';
+        if (btn)    btn.textContent    = '↻ AGGIORNA POSIZIONE';
+    } else {
+        if (readout) readout.classList.add('hidden');
+        if (btn)     btn.textContent = 'CATTURA POSIZIONE';
+    }
+}
+
+/* ==========================================
+   IMMAGINE
+   ========================================== */
+function wmmOnImageSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    wmm_resizeImage(file, 1400, 0.75).then(dataUrl => {
+        const card = wmm_getCurrent();
+        if (!card) return;
+        card.image = dataUrl;
+        card.updatedAt = Date.now();
+        if (wmmPersist()) {
+            wmm_renderImage();
+            wmm_refreshCompleteness();
+            if (navigator.vibrate) navigator.vibrate(30);
+        } else {
+            delete card.image;
+        }
+        event.target.value = '';
+    }).catch(() => alert('Impossibile caricare l\'immagine.'));
+}
+function wmm_resizeImage(file, maxEdge, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+                let { width, height } = img;
+                const scale = Math.min(1, maxEdge / Math.max(width, height));
+                width  = Math.round(width  * scale);
+                height = Math.round(height * scale);
+                const canvas = document.createElement('canvas');
+                canvas.width  = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = reject;
+            img.src = reader.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+function wmm_renderImage() {
+    const card = wmm_getCurrent();
+    const wrap = document.getElementById('wmm-img-preview-wrap');
+    const img  = document.getElementById('wmm-img-preview');
+    if (card && card.image) {
+        if (wrap) wrap.classList.remove('hidden');
+        if (img)  img.src = card.image;
+    } else {
+        if (wrap) wrap.classList.add('hidden');
+        if (img)  img.removeAttribute('src');
+    }
+}
+function wmmClearImage() {
+    const card = wmm_getCurrent();
+    if (!card) return;
+    delete card.image;
+    card.updatedAt = Date.now();
+    wmmPersist();
+    wmm_renderImage();
+    wmm_refreshCompleteness();
+}
+
+/* ==========================================
+   EXPORT PDF
+   ========================================== */
+function wmmExportPDF() {
+    wmm_flushSave();
+    const card = wmm_getCurrent();
+    if (!card) return;
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('Modulo PDF non caricato. Riprova aprendo l\'app con connessione internet almeno una volta.');
+        return;
+    }
+
+    const ORANGE = [255, 149, 0];
+    const BLACK  = [17, 17, 17];
+    const DIM    = [120, 120, 125];
+    const LINE   = [214, 214, 218];
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:'mm', format:'a4' });
+    const PW = 210, PH = 297, MX = 14, CW = 182, BOTTOM = 16, TOP_BR = 18;
+    let y = 0;
+
+    const gf = (path) => wmm_getField(card, path);
+    const vf = (path, unit) => {
+        const raw = gf(path);
+        if (!wmm_filled(raw)) return '—';
+        return unit ? (String(raw) + ' ' + unit) : String(raw);
+    };
+
+    function ensureSpace(h) {
+        if (y + h > PH - BOTTOM) { doc.addPage(); y = TOP_BR; }
+    }
+
+    /* Header band arancione */
+    doc.setFillColor.apply(doc, ORANGE);
+    doc.rect(0, 0, PW, 30, 'F');
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('WITNESS MARK MANAGER  ·  AC SCOUTER', MX, 11);
+    doc.setFontSize(19);
+    const scene = wmm_filled(card.scene) ? card.scene : '—';
+    const take  = wmm_filled(card.take)  ? card.take  : '—';
+    doc.text('SCENA ' + scene + '    ·    TAKE ' + take, MX, 23);
+
+    y = 38;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor.apply(doc, DIM);
+    doc.text('Generato il ' + wmm_fmtDate(Date.now()) + '   •   ' + wmm_countComplete(card) + ' / 6 sezioni complete', MX, y);
+    y += 8;
+
+    function drawSectionTitle(txt) {
+        ensureSpace(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor.apply(doc, ORANGE);
+        doc.text(txt, MX, y);
+        y += 1.5;
+        doc.setDrawColor.apply(doc, ORANGE);
+        doc.setLineWidth(0.4);
+        doc.line(MX, y, MX + CW, y);
+        y += 5;
+    }
+    function cellH(value, w) {
+        doc.setFont('courier','normal'); doc.setFontSize(10.5);
+        return 3.8 + doc.splitTextToSize(value, w).length * 4.6;
+    }
+    function drawCell(label, value, x, w) {
+        doc.setFont('helvetica','bold'); doc.setFontSize(7.2);
+        doc.setTextColor.apply(doc, DIM);
+        doc.text(String(label).toUpperCase(), x, y);
+        doc.setFont('courier','normal'); doc.setFontSize(10.5);
+        doc.setTextColor.apply(doc, BLACK);
+        const lines = doc.splitTextToSize(value, w);
+        doc.text(lines, x, y + 4.4);
+        return 3.8 + lines.length * 4.6;
+    }
+    function rowCells(cells) {
+        const gap = 6, half = (CW - gap) / 2;
+        if (cells.length === 1 && cells[0].full) {
+            const h = cellH(cells[0].value, CW);
+            ensureSpace(h + 4);
+            drawCell(cells[0].label, cells[0].value, MX, CW);
+            y += h + 4;
+        } else {
+            const h = Math.max(cellH(cells[0].value, half), cells[1] ? cellH(cells[1].value, half) : 0);
+            ensureSpace(h + 4);
+            drawCell(cells[0].label, cells[0].value, MX, half);
+            if (cells[1]) drawCell(cells[1].label, cells[1].value, MX + half + gap, half);
+            y += h + 4;
+        }
+    }
+
+    /* --- Sezioni --- */
+    drawSectionTitle('DATI CAMERA');
+    rowCells([{label:'Modello',         value: vf('camera.model'),    full:true}]);
+    rowCells([{label:'Altezza obiettivo', value: vf('camera.height','m')},
+              {label:'Distanza soggetto', value: vf('camera.distance','m')}]);
+    rowCells([{label:'Angolazione / Tilt', value: vf('camera.angle','°'), full:true}]);
+
+    drawSectionTitle('SETTAGGI CAMERA');
+    rowCells([{label:'FPS',    value: vf('settings.fps')},
+              {label:'Shutter', value: vf('settings.shutter')}]);
+    rowCells([{label:'ISO / EI', value: vf('settings.iso')},
+              {label:'Kelvin',   value: vf('settings.kelvin','K')}]);
+    rowCells([{label:'Codec / Risoluzione', value: vf('settings.codec'), full:true}]);
+    if (wmm_filled(gf('settings.nd')))
+        rowCells([{label:'ND', value: vf('settings.nd'), full:true}]);
+
+    drawSectionTitle('OTTICA');
+    rowCells([{label:'Focale',  value: vf('optics.focal','mm')},
+              {label:'T-stop',  value: vf('optics.tstop')}]);
+    rowCells([{label:'Serie ottiche', value: vf('optics.series'), full:true}]);
+    rowCells([{label:'Distanza fuoco', value: vf('optics.focusDistance','m')},
+              {label:'Filtri / Diottrie', value: wmm_filled(gf('optics.filters')) ? vf('optics.filters') : '—'}]);
+
+    drawSectionTitle('POSIZIONE GPS');
+    const g = card.gps;
+    if (g && wmm_filled(g.lat)) {
+        rowCells([{label:'Latitudine',  value: Number(g.lat).toFixed(6)+'°'},
+                  {label:'Longitudine', value: Number(g.lng).toFixed(6)+'°'}]);
+        rowCells([{label:'Ora rilevamento', value: g.at ? wmm_fmtDate(g.at) : '—', full:true}]);
+    } else {
+        rowCells([{label:'Posizione', value:'Non acquisita', full:true}]);
+    }
+
+    if (wmm_filled(card.notes)) {
+        drawSectionTitle('NOTE');
+        rowCells([{label:'Annotazioni', value: card.notes, full:true}]);
+    }
+
+    if (card.image) {
+        drawSectionTitle('IMMAGINE');
+        try {
+            const props = doc.getImageProperties(card.image);
+            let dW = CW, dH = dW * props.height / props.width;
+            const avail = PH - BOTTOM - y;
+            const full  = PH - BOTTOM - TOP_BR;
+            if (dH > avail) {
+                doc.addPage(); y = TOP_BR;
+                if (dH > full) { dH = full; dW = dH * props.width / props.height; }
+            }
+            doc.addImage(card.image, 'JPEG', MX + (CW - dW) / 2, y, dW, dH);
+            y += dH + 4;
+        } catch(e) {
+            rowCells([{label:'Immagine', value:'(errore nel rendering)', full:true}]);
+        }
+    }
+
+    /* Footer */
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+        doc.setPage(i);
+        doc.setDrawColor.apply(doc, LINE);
+        doc.setLineWidth(0.2);
+        doc.line(MX, PH - 10, MX + CW, PH - 10);
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+        doc.setTextColor.apply(doc, DIM);
+        doc.text('AC Scouter · Witness Mark Manager', MX, PH - 6);
+        doc.text(i + ' / ' + pages, MX + CW, PH - 6, {align:'right'});
+    }
+
+    const fname = 'WMM_Scena' + scene.replace(/[^a-zA-Z0-9._-]+/g,'_') +
+                  '_Take'  + take.replace(/[^a-zA-Z0-9._-]+/g,'_') + '.pdf';
+    doc.save(fname);
+}
+
+/* ==========================================
+   INIT
+   ========================================== */
+window.addEventListener('DOMContentLoaded', () => {
+    wmmLoadCards();
+    renderWmmList();
+});
