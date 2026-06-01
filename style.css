@@ -318,9 +318,14 @@ body::before {
     margin-bottom: 10px;
 }
 
-.input-half { 
-    flex: 1 1 0; /* Forza le due colonne a dividersi lo spazio esattamente a metà */
-    min-width: 0; /* Impedisce ai nomi lunghi di spingere fuori i bordi */
+.input-half {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.input-third {
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 label { 
@@ -944,21 +949,23 @@ input[type=range]::-webkit-slider-thumb {
     align-items: center;
 }
 
-/* Contenitore che ruota: usiamo larghezza/altezza invertite per la rotazione */
-/* Contenitore che ruota: usiamo larghezza/altezza invertite per la rotazione */
 #ciak-background {
-    width: 100dvh; 
+    width: 100dvh;
     height: 100vw;
-    background-image: url('Ciak_Background.png'); 
-    
-    /* LA MODIFICA È QUI: Sostituisci 'contain' con '100% 100%' */
-    background-size: 100% 100%; 
-    
+    background-image: url('Ciak_Background.png');
+    background-size: 100% 100%;
     background-repeat: no-repeat;
     background-position: center;
     position: relative;
-    transform: rotate(90deg); /* Ruota il ciak per l'uso verticale del telefono */
+    transform: rotate(90deg);
     transform-origin: center;
+}
+
+/* Quando l'orientation lock funziona, il SO ha già ruotato: annulliamo la rotazione CSS */
+#ciak-background.no-rotate {
+    transform: none;
+    width: 100vw;
+    height: 100dvh;
 }
 
 /* Stile universale per gli input sopra il disegno */
@@ -1410,7 +1417,10 @@ textarea:focus { border-color: var(--accent); }
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.ci-take  { color: var(--accent); }
+.ci-lbl   { color: var(--text-main); font-weight: 700; }
+.ci-val   { color: var(--accent); font-weight: 700; margin-left: 3px; }
+.ci-sep   { color: var(--text-dim); margin: 0 2px; font-weight: 400; }
+.ci-empty { color: var(--text-dim); }
 .ci-meta  { font-size: 12px; color: var(--text-dim); margin-top: 3px; font-family: var(--mono); }
 .ci-badge {
     font-size: 11px;
