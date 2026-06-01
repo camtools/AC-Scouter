@@ -31,10 +31,10 @@
                 <button onclick="showPage('calc-page')">📟 FILM CALCULATOR</button>
                 <button onclick="showPage('dop-page')">🔍 <strong>D</strong>EPTH <strong>O</strong>F <strong>F</strong>IELD </button>
                 <button onclick="showPage('sun-page')">☀️ SUN TRACKER</button>
+                <button onclick="openWmmList()">📐 MARKS</button>
                 <button onclick="showPage('focus-page')">🎯 FOCUS CHART</button>
                 <button onclick="showPage('chroma-page')"> 🟩 CHROMA SCREEN</button>
                 <button onclick="showPage('ciak-page')">🎬 CIAK</button>
-                <button onclick="openWmmList()">📐 WITNESS MARKS</button>
                 <div class="menu-divider"></div>
                 <button onclick="showPage('home-page')" class="btn-home">HOME</button>
             </nav>
@@ -373,7 +373,7 @@
     <div id="wmm-list-page" class="page">
         <div class="app-header">
             <button class="back-btn" onclick="toggleMenu()">☰</button>
-            <h2>WITNESS MARKS</h2>
+            <h2>MARKS</h2>
         </div>
         <div class="app-content">
             <button class="action-btn" onclick="wmmNewCard()" style="margin-bottom:0">+ NUOVA SCHEDA</button>
@@ -397,11 +397,15 @@
             <!-- Identità -->
             <div class="ios-card wmm-id-card">
                 <div class="row-split">
-                    <div class="input-half">
+                    <div class="input-third">
                         <label>Scena</label>
                         <input type="text" data-wmm="scene" placeholder="45A" oninput="wmmOnChange()">
                     </div>
-                    <div class="input-half">
+                    <div class="input-third">
+                        <label>INQ</label>
+                        <input type="text" inputmode="numeric" data-wmm="inq" placeholder="1" oninput="wmmOnChange()">
+                    </div>
+                    <div class="input-third">
                         <label>Take</label>
                         <input type="text" inputmode="numeric" data-wmm="take" placeholder="3" oninput="wmmOnChange()">
                     </div>
@@ -427,13 +431,13 @@
                             <input type="text" inputmode="decimal" data-wmm="camera.height" placeholder="1.45" oninput="wmmOnChange()">
                         </div>
                         <div class="input-half">
-                            <label>Distanza soggetto (m)</label>
+                            <label>Distanza soggetto (m) <span class="wmm-opt">(opz.)</span></label>
                             <input type="text" inputmode="decimal" data-wmm="camera.distance" placeholder="2.40" oninput="wmmOnChange()">
                         </div>
                     </div>
                     <div class="row">
-                        <label>Angolazione / Tilt (°)</label>
-                        <input type="text" data-wmm="camera.angle" placeholder="0  (es. +15 contropicchiata)" oninput="wmmOnChange()">
+                        <label>Angolazione / Tilt (°) <span class="wmm-opt">(opzionale)</span></label>
+                        <input type="text" data-wmm="camera.angle" placeholder="0  (es. +15° verso il basso)" oninput="wmmOnChange()">
                     </div>
                 </div>
             </div>
@@ -454,12 +458,12 @@
                         </div>
                         <div class="input-half">
                             <label>Shutter</label>
-                            <input type="text" data-wmm="settings.shutter" placeholder="180°" oninput="wmmOnChange()">
+                            <input type="text" inputmode="decimal" data-wmm="settings.shutter" placeholder="180" oninput="wmmOnChange()">
                         </div>
                     </div>
                     <div class="row-split">
                         <div class="input-half">
-                            <label>ISO / EI</label>
+                            <label>ISO</label>
                             <input type="text" inputmode="numeric" data-wmm="settings.iso" placeholder="800" oninput="wmmOnChange()">
                         </div>
                         <div class="input-half">
@@ -468,12 +472,8 @@
                         </div>
                     </div>
                     <div class="row">
-                        <label>Codec / Risoluzione</label>
+                        <label>Codec / Risoluzione <span class="wmm-opt">(opzionale)</span></label>
                         <input type="text" data-wmm="settings.codec" placeholder="ARRIRAW 4.6K 3:2" oninput="wmmOnChange()">
-                    </div>
-                    <div class="row">
-                        <label>ND <span class="wmm-opt">(opzionale)</span></label>
-                        <input type="text" data-wmm="settings.nd" placeholder="ND 0.9" oninput="wmmOnChange()">
                     </div>
                 </div>
             </div>
@@ -494,21 +494,21 @@
                         </div>
                         <div class="input-half">
                             <label>T-stop</label>
-                            <input type="text" data-wmm="optics.tstop" placeholder="T2.8" oninput="wmmOnChange()">
+                            <input type="text" inputmode="decimal" data-wmm="optics.tstop" placeholder="2.8" oninput="wmmOnChange()">
                         </div>
                     </div>
                     <div class="row">
-                        <label>Serie ottiche</label>
+                        <label>Serie ottiche <span class="wmm-opt">(opzionale)</span></label>
                         <input type="text" data-wmm="optics.series" placeholder="Cooke S4/i" oninput="wmmOnChange()">
                     </div>
                     <div class="row-split">
                         <div class="input-half">
-                            <label>Distanza fuoco (m)</label>
+                            <label>Distanza fuoco (m) <span class="wmm-opt">(opz.)</span></label>
                             <input type="text" inputmode="decimal" data-wmm="optics.focusDistance" placeholder="2.40" oninput="wmmOnChange()">
                         </div>
                         <div class="input-half">
-                            <label>Filtri / Diottrie <span class="wmm-opt">(opz.)</span></label>
-                            <input type="text" data-wmm="optics.filters" placeholder="Black Pro-Mist 1/4" oninput="wmmOnChange()">
+                            <label>Filtri <span class="wmm-opt">(opz.)</span></label>
+                            <input type="text" data-wmm="optics.filters" placeholder="ND 0.9" oninput="wmmOnChange()">
                         </div>
                     </div>
                 </div>
@@ -544,7 +544,7 @@
                 </button>
                 <div class="wmm-body">
                     <div class="row">
-                        <textarea data-wmm="notes" rows="5" placeholder="Witness marks, riferimenti fuoco, movimenti macchina, cue attori..." oninput="wmmOnChange()"></textarea>
+                        <textarea data-wmm="notes" rows="5" placeholder="Riferimenti, movimenti macchina, distanza da oggetti..." oninput="wmmOnChange()"></textarea>
                     </div>
                 </div>
             </div>
