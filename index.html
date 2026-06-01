@@ -34,6 +34,7 @@
                 <button onclick="showPage('focus-page')">🎯 FOCUS CHART</button>
                 <button onclick="showPage('chroma-page')"> 🟩 CHROMA SCREEN</button>
                 <button onclick="showPage('ciak-page')">🎬 CIAK</button>
+                <button onclick="openWmmList()">📐 WITNESS MARKS</button>
                 <div class="menu-divider"></div>
                 <button onclick="showPage('home-page')" class="btn-home">HOME</button>
             </nav>
@@ -365,6 +366,219 @@
     </div>
 </div>
 
+
+    <!-- ==========================================
+         WITNESS MARKS — LISTA SCHEDE
+         ========================================== -->
+    <div id="wmm-list-page" class="page">
+        <div class="app-header">
+            <button class="back-btn" onclick="toggleMenu()">☰</button>
+            <h2>WITNESS MARKS</h2>
+        </div>
+        <div class="app-content">
+            <button class="action-btn" onclick="wmmNewCard()" style="margin-bottom:0">+ NUOVA SCHEDA</button>
+            <div id="wmm-cards-list" class="wmm-cards-list"></div>
+            <div id="wmm-empty-state" class="wmm-empty-state">
+                Nessuna scheda salvata.<br>Crea la prima con <strong>+ Nuova scheda</strong>.
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         WITNESS MARKS — EDITOR SCHEDA
+         ========================================== -->
+    <div id="wmm-card-page" class="page">
+        <div class="app-header">
+            <button class="back-btn" onclick="wmmCloseCard()">‹</button>
+            <h2 id="wmm-card-title">SCHEDA</h2>
+        </div>
+        <div class="app-content" id="wmm-card-content">
+
+            <!-- Identità -->
+            <div class="ios-card wmm-id-card">
+                <div class="row-split">
+                    <div class="input-half">
+                        <label>Scena</label>
+                        <input type="text" data-wmm="scene" placeholder="45A" oninput="wmmOnChange()">
+                    </div>
+                    <div class="input-half">
+                        <label>Take</label>
+                        <input type="text" inputmode="numeric" data-wmm="take" placeholder="3" oninput="wmmOnChange()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 1. DATI CAMERA -->
+            <div class="wmm-section ios-card" data-wmm-section="camera">
+                <button type="button" class="wmm-section-head" onclick="wmmToggleSection(this)">
+                    <span class="wmm-icon">📷</span>
+                    <span class="wmm-title">Dati camera</span>
+                    <span class="wmm-dot"></span>
+                    <span class="wmm-chev">▸</span>
+                </button>
+                <div class="wmm-body">
+                    <div class="row">
+                        <label>Modello camera</label>
+                        <input type="text" data-wmm="camera.model" placeholder="ARRI Alexa 35" oninput="wmmOnChange()">
+                    </div>
+                    <div class="row-split">
+                        <div class="input-half">
+                            <label>Altezza obiettivo (m)</label>
+                            <input type="text" inputmode="decimal" data-wmm="camera.height" placeholder="1.45" oninput="wmmOnChange()">
+                        </div>
+                        <div class="input-half">
+                            <label>Distanza soggetto (m)</label>
+                            <input type="text" inputmode="decimal" data-wmm="camera.distance" placeholder="2.40" oninput="wmmOnChange()">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <label>Angolazione / Tilt (°)</label>
+                        <input type="text" data-wmm="camera.angle" placeholder="0  (es. +15 contropicchiata)" oninput="wmmOnChange()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. SETTAGGI CAMERA -->
+            <div class="wmm-section ios-card" data-wmm-section="settings">
+                <button type="button" class="wmm-section-head" onclick="wmmToggleSection(this)">
+                    <span class="wmm-icon">⚙️</span>
+                    <span class="wmm-title">Settaggi camera</span>
+                    <span class="wmm-dot"></span>
+                    <span class="wmm-chev">▸</span>
+                </button>
+                <div class="wmm-body">
+                    <div class="row-split">
+                        <div class="input-half">
+                            <label>FPS</label>
+                            <input type="text" inputmode="decimal" data-wmm="settings.fps" placeholder="24" oninput="wmmOnChange()">
+                        </div>
+                        <div class="input-half">
+                            <label>Shutter</label>
+                            <input type="text" data-wmm="settings.shutter" placeholder="180°" oninput="wmmOnChange()">
+                        </div>
+                    </div>
+                    <div class="row-split">
+                        <div class="input-half">
+                            <label>ISO / EI</label>
+                            <input type="text" inputmode="numeric" data-wmm="settings.iso" placeholder="800" oninput="wmmOnChange()">
+                        </div>
+                        <div class="input-half">
+                            <label>Kelvin</label>
+                            <input type="text" inputmode="numeric" data-wmm="settings.kelvin" placeholder="5600" oninput="wmmOnChange()">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <label>Codec / Risoluzione</label>
+                        <input type="text" data-wmm="settings.codec" placeholder="ARRIRAW 4.6K 3:2" oninput="wmmOnChange()">
+                    </div>
+                    <div class="row">
+                        <label>ND <span class="wmm-opt">(opzionale)</span></label>
+                        <input type="text" data-wmm="settings.nd" placeholder="ND 0.9" oninput="wmmOnChange()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. OTTICA -->
+            <div class="wmm-section ios-card" data-wmm-section="optics">
+                <button type="button" class="wmm-section-head" onclick="wmmToggleSection(this)">
+                    <span class="wmm-icon">🔭</span>
+                    <span class="wmm-title">Ottica</span>
+                    <span class="wmm-dot"></span>
+                    <span class="wmm-chev">▸</span>
+                </button>
+                <div class="wmm-body">
+                    <div class="row-split">
+                        <div class="input-half">
+                            <label>Focale (mm)</label>
+                            <input type="text" inputmode="decimal" data-wmm="optics.focal" placeholder="35" oninput="wmmOnChange()">
+                        </div>
+                        <div class="input-half">
+                            <label>T-stop</label>
+                            <input type="text" data-wmm="optics.tstop" placeholder="T2.8" oninput="wmmOnChange()">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <label>Serie ottiche</label>
+                        <input type="text" data-wmm="optics.series" placeholder="Cooke S4/i" oninput="wmmOnChange()">
+                    </div>
+                    <div class="row-split">
+                        <div class="input-half">
+                            <label>Distanza fuoco (m)</label>
+                            <input type="text" inputmode="decimal" data-wmm="optics.focusDistance" placeholder="2.40" oninput="wmmOnChange()">
+                        </div>
+                        <div class="input-half">
+                            <label>Filtri / Diottrie <span class="wmm-opt">(opz.)</span></label>
+                            <input type="text" data-wmm="optics.filters" placeholder="Black Pro-Mist 1/4" oninput="wmmOnChange()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. POSIZIONE GPS -->
+            <div class="wmm-section ios-card" data-wmm-section="gps">
+                <button type="button" class="wmm-section-head" onclick="wmmToggleSection(this)">
+                    <span class="wmm-icon">📍</span>
+                    <span class="wmm-title">Posizione GPS</span>
+                    <span class="wmm-dot"></span>
+                    <span class="wmm-chev">▸</span>
+                </button>
+                <div class="wmm-body">
+                    <button class="action-btn" onclick="wmmCaptureGPS()" id="wmm-gps-btn">CATTURA POSIZIONE</button>
+                    <div id="wmm-gps-readout" class="wmm-gps-readout hidden">
+                        <div class="wmm-gps-row"><span class="wmm-gps-lbl">LAT</span><span id="wmm-gps-lat" class="wmm-mono">—</span></div>
+                        <div class="wmm-gps-row"><span class="wmm-gps-lbl">LONG</span><span id="wmm-gps-lng" class="wmm-mono">—</span></div>
+                        <div class="wmm-gps-row"><span class="wmm-gps-lbl">ORA</span><span id="wmm-gps-time" class="wmm-mono">—</span></div>
+                        <button class="wmm-ghost-btn" onclick="wmmClearGPS()">Cancella posizione</button>
+                    </div>
+                    <p class="wmm-hint">Salva solo coordinate e orario del dispositivo. Funziona offline; nessun indirizzo, nessuna connessione richiesta.</p>
+                </div>
+            </div>
+
+            <!-- 5. NOTE -->
+            <div class="wmm-section ios-card" data-wmm-section="notes">
+                <button type="button" class="wmm-section-head" onclick="wmmToggleSection(this)">
+                    <span class="wmm-icon">📝</span>
+                    <span class="wmm-title">Note</span>
+                    <span class="wmm-dot"></span>
+                    <span class="wmm-chev">▸</span>
+                </button>
+                <div class="wmm-body">
+                    <div class="row">
+                        <textarea data-wmm="notes" rows="5" placeholder="Witness marks, riferimenti fuoco, movimenti macchina, cue attori..." oninput="wmmOnChange()"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. IMMAGINE -->
+            <div class="wmm-section ios-card" data-wmm-section="image">
+                <button type="button" class="wmm-section-head" onclick="wmmToggleSection(this)">
+                    <span class="wmm-icon">🖼️</span>
+                    <span class="wmm-title">Immagine</span>
+                    <span class="wmm-dot"></span>
+                    <span class="wmm-chev">▸</span>
+                </button>
+                <div class="wmm-body">
+                    <input type="file" id="wmm-img-input" accept="image/*" class="hidden" onchange="wmmOnImageSelected(event)">
+                    <button class="action-btn" onclick="document.getElementById('wmm-img-input').click()">SCATTA / SCEGLI FOTO</button>
+                    <div id="wmm-img-preview-wrap" class="wmm-img-wrap hidden">
+                        <img id="wmm-img-preview" alt="Anteprima inquadratura">
+                        <button class="wmm-ghost-btn" onclick="wmmClearImage()">Rimuovi foto</button>
+                    </div>
+                    <p class="wmm-hint">La foto viene ridimensionata automaticamente per risparmiare spazio.</p>
+                </div>
+            </div>
+
+            <div class="wmm-progress-line"><span id="wmm-progress-count">0 / 6</span> sezioni complete</div>
+
+            <div class="wmm-export-bar">
+                <button class="action-btn wmm-export-btn" onclick="wmmExportPDF()">📄 ESPORTA PDF</button>
+                <button class="wmm-danger-btn" onclick="wmmDeleteCurrent()">Elimina scheda</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="jspdf.umd.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
