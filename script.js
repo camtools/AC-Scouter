@@ -721,28 +721,65 @@ const ciakPage = document.getElementById('ciak-page');
 
 // Inizializzazione Audio
 const clapSound = new Audio('clap.wav');
+clapSound.volume = 1;
 clapSound.load(); 
 
 // --- AZIONE 1: BATTITO DEL CIAK (Sulle stecche) ---
 if(ciakTrigger) {
-    const executeCiak = (e) => {
-        if (e.cancelable) e.preventDefault(); 
-        
-        // Riproduzione istantanea (tolto il ritardo)
-        clapSound.currentTime = 0;
-        clapSound.play().catch(err => console.log("Errore audio:", err));
-        
+    const impactFlashMs = 100;
+    let flashStartTimer, flashEndTimer;
+    let clapSequence = 0;
+    const clearFlash = () => {
+        clearTimeout(flashStartTimer);
+        clearTimeout(flashEndTimer);
+        ciakBg.classList.remove('flash-white');
+    };
+    const showFlash = () => {
         ciakBg.classList.add('flash-white');
         if (navigator.vibrate) navigator.vibrate(50);
+    };
+    // Flash only on the wooden impact, excluding the quieter audio decay.
+    // Browser playback follows its playing event; native playback supplies its clock.
+    clapSound.addEventListener('playing', () => {
+        showFlash();
+        flashEndTimer = setTimeout(clearFlash, impactFlashMs);
+    });
+    clapSound.addEventListener('ended', clearFlash);
+    clapSound.addEventListener('error', clearFlash);
 
-        setTimeout(() => {
-            ciakBg.classList.remove('flash-white');
-        }, 1000);
+    const executeCiak = async (e) => {
+        if (e.cancelable) e.preventDefault();
+        const sequence = ++clapSequence;
+        clearFlash();
+        clapSound.pause();
+        try {
+            const playback = window.ACScouterNative && window.ACScouterNative.playClap &&
+                window.ACScouterNative.playClap();
+            if (playback) {
+                const timing = await playback;
+                if (sequence !== clapSequence) return;
+                if (!timing || !Number.isFinite(timing.startTimeMs) ||
+                    !Number.isFinite(timing.durationMs) || timing.durationMs <= 0) {
+                    throw new Error('Tempi audio non disponibili');
+                }
+                const endTimeMs = timing.startTimeMs + Math.min(timing.durationMs, impactFlashMs);
+                if (endTimeMs <= Date.now()) return;
+                flashStartTimer = setTimeout(() => {
+                    if (sequence !== clapSequence || endTimeMs <= Date.now()) return;
+                    showFlash();
+                    flashEndTimer = setTimeout(clearFlash, Math.max(0, endTimeMs - Date.now()));
+                }, Math.max(0, timing.startTimeMs - Date.now()));
+            } else {
+                clapSound.currentTime = 0;
+                await clapSound.play();
+            }
+        } catch (err) {
+            if (sequence === clapSequence) clearFlash();
+            console.log("Errore audio:", err);
+        }
     };
 
-    // Ora parte appena TOCCHI (touchstart), non quando rilasci. Molto più realistico!
-    ciakTrigger.addEventListener('touchstart', executeCiak, { passive: false });
-    ciakTrigger.addEventListener('mousedown', executeCiak);
+    ciakTrigger.addEventListener('pointerdown', executeCiak);
 }
 
 // --- AZIONE 2: CLEAN MODE (Quadrato in basso a sinistra) ---
@@ -774,32 +811,40 @@ if(cleanTrigger) {
 /* ==========================================
    9. UNIVERSAL LONG PRESS (Clean Mode)
    ========================================== */
-let globalLongPressTimer;
-
 function initLongPressEvents() {
     const targets = [
-        document.getElementById('chroma-screen'),
+        document.getElementById('chroma-page'),
         document.getElementById('focus-page') // Corretto il riferimento
     ];
 
     targets.forEach(target => {
         if (!target) return;
+        let timer;
+        let origin;
+        const stopPress = () => { clearTimeout(timer); origin = null; };
         const startPress = (e) => {
-            if (e.target.tagName === 'BUTTON' || e.target.classList.contains('c-btn')) return;
-            globalLongPressTimer = setTimeout(() => {
-                target.closest('.page').classList.toggle('clean-mode');
+            stopPress();
+            if ((e.pointerType === 'mouse' && e.button !== 0) ||
+                e.target.closest('button, input, select, textarea, a')) return;
+            origin = { x: e.clientX, y: e.clientY };
+            timer = setTimeout(() => {
+                if (!target.classList.contains('active')) return;
+                target.classList.toggle('clean-mode');
+                if (window.getSelection) window.getSelection().removeAllRanges();
+                if (window.ACScouter) window.ACScouter.syncPresentation();
                 if (navigator.vibrate) navigator.vibrate(60);
             }, 1000);
         };
-        const stopPress = () => clearTimeout(globalLongPressTimer);
-
-        target.addEventListener('touchstart', startPress, { passive: true });
-        target.addEventListener('touchend', stopPress);
-        target.addEventListener('mousedown', startPress);
-        target.addEventListener('mouseup', stopPress);
+        target.addEventListener('contextmenu', event => event.preventDefault());
+        target.addEventListener('pointerdown', startPress);
+        target.addEventListener('pointermove', event => {
+            if (origin && Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 12) stopPress();
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(name => target.addEventListener(name, stopPress));
+        window.addEventListener('blur', stopPress);
     });
 }
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => console.log('AC Scouter: Pronto per l\'uso offline!'))
@@ -1347,7 +1392,11 @@ function wmmExportPDF() {
     const fname = 'WMM_Scena' + scene.replace(/[^a-zA-Z0-9._-]+/g,'_') +
                   '_INQ'   + inq.replace(/[^a-zA-Z0-9._-]+/g,'_') +
                   '_Take'  + take.replace(/[^a-zA-Z0-9._-]+/g,'_') + '.pdf';
-    doc.save(fname);
+    if (window.ACScouterNative && typeof window.ACScouterNative.sharePDF === 'function') {
+        window.ACScouterNative.sharePDF(doc.output('datauristring'), fname);
+    } else {
+        doc.save(fname);
+    }
 }
 
 /* ==========================================
