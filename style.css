@@ -23,6 +23,7 @@
 }
 html {
     background-color: #000;
+    overscroll-behavior: none;
 }
 
 body {
@@ -53,6 +54,20 @@ body::before {
     z-index: 0; /* Metti lo sfondo dietro i contenuti ma sopra il background root */
     pointer-events: none; /* Evita che "rubi" i click ai pulsanti */
 }
+
+/* The iPhone app draws this same artwork behind the entire screen. */
+html.ac-native-background { background-color: transparent; }
+.ac-native-background body::before { display: none; }
+html.toolbox-solid-background { background-color: var(--toolbox-backdrop, #000); }
+.toolbox-solid-background body::before { display: none; }
+
+/* Camera reference surfaces are not text documents. Keep form editing elsewhere. */
+#focus-page, #focus-page *, #chroma-page, #chroma-page * {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+#focus-page, #chroma-page { touch-action: none; }
 
 /* ==========================================
    2. HOME PAGE (Splash Screen)
@@ -271,9 +286,12 @@ body::before {
     flex-direction: column;
     align-items: center; 
     padding: 0px 20px; /* Padding laterale fisso per sicurezza */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     flex: 1; 
     overflow-y: auto; 
     overflow-x: hidden; /* Fondamentale: impedisce lo scroll orizzontale parziale */
+    /* Avoid elastic movement and scroll chaining without blocking real overflow. */
+    overscroll-behavior: none;
 }
 
 .back-btn { 
@@ -456,6 +474,18 @@ input[type=range]::-webkit-slider-thumb {
     font-size: 20px;
     margin-bottom: 10px;
 }
+
+/* Keep all DOF results visible on an iPhone without shrinking touch targets.
+   Smaller windows and the keyboard can still scroll instead of clipping data. */
+#dop-page .app-header { padding-bottom: 8px; margin-bottom: 8px; }
+#dop-page .ios-card { margin-bottom: 8px; }
+#dop-page .row { margin-bottom: 10px; }
+#dop-page .row-split { margin-bottom: 8px; }
+#dop-page label { margin-bottom: 5px; }
+#dop-page input[type=range] { margin-top: 18px; margin-bottom: 6px; }
+#dop-page .dop-grid { margin-bottom: 14px; }
+#dop-page .hyperfocal-row { margin-top: 10px; padding-top: 10px; margin-bottom: 6px; }
+#dop-page #hyperfocal-val { margin-bottom: 4px; }
 
 /* --- LOGICA PER LE TACCHE (SCALA GRADUATA) --- */
 .focal-slider-container {
@@ -669,8 +699,8 @@ input[type=range]::-webkit-slider-thumb {
 
 .chart-wrapper {
     /* Definisci qui la grandezza fissa */
-    width: 362px; 
-    height: 362px;
+    width: min(362px, 100%);
+    height: auto;
     aspect-ratio: 1/1;
     display: flex;
     align-items: center;
@@ -710,7 +740,7 @@ input[type=range]::-webkit-slider-thumb {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
-    bottom: 20px; /* distanza dal fondo */
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); /* distanza dal fondo */
     width: 90%;
     max-width: 420px;
     z-index: 200;
@@ -838,7 +868,7 @@ input[type=range]::-webkit-slider-thumb {
 /* --- CONTROLLI IN BASSO --- */
 .chroma-controls {
     position: fixed;
-    bottom: 30px;
+    bottom: calc(30px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     margin-bottom: 35px;
     transform: translateX(-50%);
@@ -1518,3 +1548,28 @@ textarea:focus { border-color: var(--accent); }
 }
 .wmm-export-bar  { width: 100%; margin-bottom: 10px; }
 .wmm-export-btn  { box-shadow: 0 0 14px 1px rgba(255,149,0,0.35); }
+
+/* Clean mode only fades controls: no translation, reflow or image resizing. */
+#focus-page .app-header,
+#chroma-page .app-header,
+#ciak-page .app-header {
+    transform: none !important;
+    visibility: visible !important;
+    transition: opacity 0.5s ease !important;
+}
+#focus-page .chart-controls,
+#chroma-page .chart-controls,
+#chroma-page .chroma-controls {
+    transform: translateX(-50%) !important;
+    visibility: visible !important;
+    transition: opacity 0.5s ease !important;
+}
+#focus-page.clean-mode .app-header,
+#chroma-page.clean-mode .app-header,
+#ciak-page.clean-mode .app-header,
+#focus-page.clean-mode .chart-controls,
+#chroma-page.clean-mode .chart-controls,
+#chroma-page.clean-mode .chroma-controls {
+    opacity: 0;
+    pointer-events: none;
+}
