@@ -22,22 +22,25 @@
         const page = Object.values(pages).map(id => document.getElementById(id))
             .find(element => element && element.classList.contains('active'));
         const clean = !!page && page.classList.contains('clean-mode');
+        const menu = document.getElementById('menu-overlay');
+        const menuVisible = !!menu && menu.style.display === 'flex';
         let backdrop = 'artwork';
-        if (page && (page.id === 'ciak-page' || (page.id === 'focus-page' && clean))) {
+        if (!menuVisible && page && (page.id === 'ciak-page' || (page.id === 'focus-page' && clean))) {
             backdrop = 'black';
-        } else if (page && page.id === 'chroma-page') {
+        } else if (!menuVisible && page && page.id === 'chroma-page') {
             const screen = document.getElementById('chroma-screen');
             backdrop = Object.keys(colors).find(color => screen.classList.contains('chroma-' + color)) || 'green';
         }
-        const immersive = clean && !!page && ['focus-page', 'chroma-page', 'ciak-page'].includes(page.id);
+        const immersive = !menuVisible && clean && !!page && ['focus-page', 'chroma-page', 'ciak-page'].includes(page.id);
         if (document.documentElement) {
+            document.documentElement.classList.toggle('toolbox-menu-open', menuVisible);
             document.documentElement.style.setProperty('--toolbox-backdrop', colors[backdrop] || 'transparent');
             document.documentElement.classList.toggle('toolbox-solid-background', backdrop !== 'artwork');
             const theme = document.querySelector('meta[name="theme-color"]');
             if (theme) theme.setAttribute('content', colors[backdrop] || '#000000');
         }
         if (window.ACScouterNative && window.ACScouterNative.setPresentation) {
-            window.ACScouterNative.setPresentation({ backdrop: backdrop, immersive: immersive });
+            window.ACScouterNative.setPresentation({ backdrop: backdrop, immersive: immersive, menuVisible: menuVisible });
         }
     }
 
@@ -66,6 +69,8 @@
             const element = document.getElementById(id);
             if (element) observer.observe(element, { attributes: true, attributeFilter: ['class'] });
         });
+        const menu = document.getElementById('menu-overlay');
+        if (menu) observer.observe(menu, { attributes: true, attributeFilter: ['style'] });
     }
     window.addEventListener('load', syncPresentation);
     window.addEventListener('load', openHash);

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ac-scouter-web-v15';
+const CACHE_NAME = 'ac-scouter-web-v16';
 const ASSETS = [
   './index.html', './style.css', './script.js', './toolbox-routing.js',
   './lens-match-math.js', './lens-match.js',

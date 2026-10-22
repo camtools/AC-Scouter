@@ -33,7 +33,7 @@ function worker() {
         },
         caches: {
             async open() { return cache; },
-            async keys() { return ['ac-scouter-v4', 'ac-scouter-web-v12', 'ac-scouter-web-v14', 'ac-scouter-web-v15', 'other-app']; },
+            async keys() { return ['ac-scouter-v4', 'ac-scouter-web-v12', 'ac-scouter-web-v14', 'ac-scouter-web-v15', 'ac-scouter-web-v16', 'other-app']; },
             async delete(name) { removed.push(name); }
         },
         async fetch() { requests++; throw Error('offline'); }
@@ -66,7 +66,7 @@ test('offline navigations with a query still open the app; external APIs and wri
 
 test('an update retires only old AC Scouter caches without touching stored Marks or other apps', async () => {
     const app = worker(); await app.lifecycle('activate');
-    assert.deepEqual(app.removed, ['ac-scouter-v4', 'ac-scouter-web-v12', 'ac-scouter-web-v14']);
+    assert.deepEqual(app.removed, ['ac-scouter-v4', 'ac-scouter-web-v12', 'ac-scouter-web-v14', 'ac-scouter-web-v15']);
     assert.equal(app.counts().claims, 1);
 });
 

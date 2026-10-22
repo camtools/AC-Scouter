@@ -39,7 +39,7 @@
                 <button onclick="showPage('chroma-page')"> 🟩 CHROMA SCREEN</button>
                 <button onclick="showPage('ciak-page')">🎬 CIAK</button>
                 <div class="menu-divider"></div>
-                <button onclick="showPage('home-page')" class="btn-home">HOME</button>
+                <button onclick="showPage('home-page')" class="btn-home" aria-label="Home"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:auto"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg></button>
             </nav>
         </div>
     </div>
@@ -234,6 +234,11 @@
             <section class="ios-card lm-available" aria-labelledby="lm-available-heading">
                 <h3 id="lm-available-heading">AVAILABLE LENSES</h3>
                 <div id="lm-focals" class="lm-lens-grid" role="group" aria-label="Available focal lengths and matching distances"></div>
+                <div id="lm-pager" class="lm-pager" hidden>
+                    <button id="lm-prev" type="button" aria-label="Previous focal lengths">‹</button>
+                    <span id="lm-page-number"></span>
+                    <button id="lm-next" type="button" aria-label="Next focal lengths">›</button>
+                </div>
                 <details id="lm-editor" class="lm-editor">
                     <summary id="lm-editor-summary">Edit focal lengths</summary>
                     <form id="lm-lens-form">

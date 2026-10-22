@@ -20,6 +20,8 @@
     const numberFormat = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const focalFormat = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 2 });
     let lensButtons = [];
+    let focalPage = 0;
+    const pageSize = 15;
 
     try {
         const saved = JSON.parse(localStorage.getItem(storageKey));
@@ -69,6 +71,7 @@
 
     function buildLensButtons() {
         list.replaceChildren();
+        focalPage = 0;
         lensButtons = state.focals.map(focal => {
             const button = document.createElement('button');
             button.type = 'button';
@@ -122,8 +125,20 @@
             const selected = byLens && newFocalMm === focal;
             button.setAttribute('aria-pressed', String(selected));
             button.setAttribute('aria-label', focalFormat.format(focal) + ' mm, ' + text);
+            button.hidden = Math.floor(index / pageSize) !== focalPage;
         });
+        renderPager();
     }
+
+    function renderPager() {
+        const count = Math.ceil(lensButtons.length / pageSize);
+        byId('pager').hidden = count <= 1;
+        byId('page-number').textContent = (focalPage + 1) + ' / ' + count;
+        byId('prev').disabled = focalPage === 0;
+        byId('next').disabled = focalPage >= count - 1;
+    }
+    byId('prev').addEventListener('click', () => { focalPage = Math.max(0, focalPage - 1); render(); });
+    byId('next').addEventListener('click', () => { focalPage = Math.min(Math.ceil(lensButtons.length / pageSize) - 1, focalPage + 1); render(); });
 
     function switchMode(mode) {
         if (mode === state.mode) return;
