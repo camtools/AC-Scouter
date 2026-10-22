@@ -1,6 +1,7 @@
-const CACHE_NAME = 'ac-scouter-web-v12';
+const CACHE_NAME = 'ac-scouter-web-v14';
 const ASSETS = [
   './', './index.html', './style.css', './script.js', './toolbox-routing.js',
+  './lens-match-math.js', './lens-match.js',
   './manifest.json', './favicon.png', './Pixel.jpg', './Ciak_Background.png',
   './clap.wav', './jspdf_umd_min.js', './icons/icon-192.png',
   './icons/icon-512.png', './icons/apple-touch-icon.png'

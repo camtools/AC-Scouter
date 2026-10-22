@@ -28,7 +28,7 @@ function worker() {
         },
         caches: {
             async open() { return cache; },
-            async keys() { return ['ac-scouter-v4', 'ac-scouter-web-v12', 'other-app']; },
+            async keys() { return ['ac-scouter-v4', 'ac-scouter-web-v12', 'ac-scouter-web-v14', 'other-app']; },
             async delete(name) { removed.push(name); }
         },
         async fetch() { requests++; throw Error('offline'); }
@@ -45,7 +45,7 @@ function worker() {
 
 test('offline installation includes every local image, script, icon and real Ciak audio', async () => {
     const app = worker(); await app.lifecycle('install');
-    for (const asset of ['index.html', 'style.css', 'script.js', 'toolbox-routing.js', 'Pixel.jpg', 'Ciak_Background.png', 'clap.wav', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png']) {
+    for (const asset of ['index.html', 'style.css', 'script.js', 'toolbox-routing.js', 'lens-match-math.js', 'lens-match.js', 'Pixel.jpg', 'Ciak_Background.png', 'clap.wav', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png']) {
         assert.ok(await app.request(asset), asset);
     }
     assert.equal(app.counts().requests, 0);
@@ -61,6 +61,6 @@ test('offline navigations with a query still open the app; external APIs and wri
 
 test('an update retires only old AC Scouter caches without touching stored Marks or other apps', async () => {
     const app = worker(); await app.lifecycle('activate');
-    assert.deepEqual(app.removed, ['ac-scouter-v4']);
+    assert.deepEqual(app.removed, ['ac-scouter-v4', 'ac-scouter-web-v12']);
     assert.equal(app.counts().claims, 1);
 });
