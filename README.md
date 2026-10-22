@@ -19,6 +19,16 @@ e dalla schermata Home di iPhone.
 - Scorrimento senza rimbalzo nelle pagine che entrano nello schermo; le schede
   lunghe rimangono scorribili. Icona derivata dal favicon originale.
 
+## Grafica allineata all’app iPhone
+
+Il menu mostra solo lo sfondo colorato leggermente scurito, senza sfocatura o
+comandi residui di Chroma/Focus Chart. Il pulsante Home usa una casetta.
+Lens Match dispone input, risultato e focali in una schermata, distribuendo
+lo spazio verticale tra le card; i set oltre 15 focali usano pulsanti di pagina.
+L’editor delle focali si apre sopra alla schermata. Anche Sun Tracker in Manual
+usa un’area fissa, senza il piccolo scorrimento quando il contenuto entra.
+Notch e indicatore Home restano protetti nella webapp installata.
+
 ## Uso su iPhone
 
 Apri [AC Scouter](https://camtools.github.io/AC-Scouter/) in Safari e scegli

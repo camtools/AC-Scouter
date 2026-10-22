@@ -116,24 +116,24 @@ test('native backdrop follows clean Focus, every Chroma color, Ciak, and return 
     const states = [];
     app.context.ACScouterNative = { setPresentation: state => states.push(JSON.parse(JSON.stringify(state))) };
     app.context.ACScouter.openTool('focus');
-    assert.deepEqual(states.at(-1), { backdrop: 'artwork', immersive: false });
+    assert.deepEqual(states.at(-1), { backdrop: 'artwork', immersive: false, menuVisible: false });
     app.elements.get('focus-page').classList.add('clean-mode');
     app.context.ACScouter.syncPresentation();
-    assert.deepEqual(states.at(-1), { backdrop: 'black', immersive: true });
+    assert.deepEqual(states.at(-1), { backdrop: 'black', immersive: true, menuVisible: false });
     const screen = app.elements.get('chroma-screen');
     for (const color of ['green', 'blue', 'grey', 'white', 'black']) {
         for (const name of ['green', 'blue', 'grey', 'white', 'black']) screen.classList.remove('chroma-' + name);
         screen.classList.add('chroma-' + color);
         app.context.ACScouter.openTool('chroma');
-        assert.deepEqual(states.at(-1), { backdrop: color, immersive: false });
+        assert.deepEqual(states.at(-1), { backdrop: color, immersive: false, menuVisible: false });
     }
     app.elements.get('chroma-page').classList.add('clean-mode');
     app.context.ACScouter.syncPresentation();
-    assert.deepEqual(states.at(-1), { backdrop: 'black', immersive: true });
+    assert.deepEqual(states.at(-1), { backdrop: 'black', immersive: true, menuVisible: false });
     app.context.ACScouter.openTool('ciak');
-    assert.deepEqual(states.at(-1), { backdrop: 'black', immersive: false });
+    assert.deepEqual(states.at(-1), { backdrop: 'black', immersive: false, menuVisible: false });
     app.context.ACScouter.openTool('home');
-    assert.deepEqual(states.at(-1), { backdrop: 'artwork', immersive: false });
+    assert.deepEqual(states.at(-1), { backdrop: 'artwork', immersive: false, menuVisible: false });
 });
 
 test('long press toggles clean mode once; moving, cancelling, controls and navigation cancel it', () => {
@@ -210,4 +210,40 @@ test('browser Ciak flash is brief even while the audio tail continues', async ()
     assert.equal(app.timerDelays.get([...app.timers.keys()][0]), 100);
     app.fireTimers();
     assert.equal(app.elements.get('ciak-background').classList.contains('flash-white'), false);
+});
+
+// Menu visibility and tool backdrop restoration.
+test('menu dimming follows opening, closing, and tool navigation', () => {
+    const app = application();
+    const states = [];
+    app.context.ACScouterNative = { setPresentation: state => states.push(state) };
+    app.context.ACScouter.openTool('home');
+    app.context.toggleMenu();
+    app.context.ACScouter.syncPresentation();
+    assert.equal(states.at(-1).menuVisible, true);
+    app.context.toggleMenu();
+    app.context.ACScouter.syncPresentation();
+    assert.equal(states.at(-1).menuVisible, false);
+    app.context.toggleMenu();
+    app.context.ACScouter.openTool('lens');
+    assert.equal(states.at(-1).menuVisible, false);
+});
+
+test('menu shows artwork instead of the last tool, then restores its backdrop', () => {
+    const app = application();
+    const states = [];
+    app.context.ACScouterNative = { setPresentation: state => states.push(state) };
+    for (const tool of ['ciak', 'chroma', 'focus']) {
+        app.context.ACScouter.openTool(tool);
+        app.elements.get(tool + '-page').classList.add('clean-mode');
+        app.context.toggleMenu();
+        app.context.ACScouter.syncPresentation();
+        assert.equal(states.at(-1).backdrop, 'artwork');
+        assert.equal(states.at(-1).immersive, false);
+        assert.equal(states.at(-1).menuVisible, true);
+        app.context.toggleMenu();
+        app.context.ACScouter.syncPresentation();
+        assert.equal(states.at(-1).menuVisible, false);
+        assert.equal(states.at(-1).backdrop, tool === 'chroma' ? 'green' : 'black');
+    }
 });

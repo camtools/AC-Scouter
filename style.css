@@ -172,15 +172,20 @@ html.toolbox-solid-background { background-color: var(--toolbox-backdrop, #000);
     display: none; /* Nascosto finché non premi il menu */
     position: fixed; 
     inset: 0; /* Copre tutto lo schermo (top:0, left:0, etc) */
-    /* background: rgba(0,0,0,0.85); Sfondo semi-trasparente */
-    /* Effetto vetro sfocato (Blur) tipico di Apple */
-    backdrop-filter: blur(0px); 
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     z-index: 100; /* Sta sopra a tutto */
     justify-content: center; 
     align-items: center; 
     padding: 20px;
     
+}
+
+/* Hide the full tool layer, including camera bars with forced visibility. */
+.toolbox-menu-open .page {
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 .menu-card { 
@@ -1615,3 +1620,97 @@ textarea:focus { border-color: var(--accent); }
 .menu-card { max-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
 .menu-list { max-height: calc(100dvh - 104px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; overscroll-behavior: contain; }
 .menu-list > button { flex-shrink: 0; }
+.menu-list { scrollbar-width: none; }
+.menu-list::-webkit-scrollbar { display: none; }
+
+/* Work surfaces match the iPhone app, with browser safe areas. */
+html:has(#lens-match-page.active, #sun-page.active) body {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+}
+#lens-match-page,
+#sun-page {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+#lens-match-page .app-header,
+#sun-page .app-header {
+    flex: 0 0 auto;
+    padding: 8px 20px;
+    margin: 0 auto;
+}
+#lens-match-page .lm-content {
+    min-height: 0;
+    overflow: hidden;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 0 16px 8px;
+}
+#lens-match-page .ios-card { padding: 9px; margin: 0; }
+#lens-match-page label { margin-bottom: 5px; }
+#lens-match-page .lm-card-heading { margin-bottom: 6px; }
+#lens-match-page .lm-mode-switch { margin-bottom: 7px; }
+#lens-match-page .lm-arrow { display: none; }
+#lens-match-page .lm-result { padding: 8px; }
+#lens-match-page #lm-result-value { font-size: clamp(46px, 14vw, 58px); }
+#lens-match-page .lm-result-detail { margin-top: 2px; line-height: 1.25; }
+#lens-match-page .lm-note { margin-top: 5px; line-height: 1.3; }
+#lens-match-page .lm-available {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    min-height: 0;
+}
+#lens-match-page .lm-available h3 { margin-bottom: 6px; }
+#lens-match-page .lm-lens-grid {
+    flex: 0 0 auto;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-auto-rows: 44px;
+    gap: 4px;
+}
+#lens-match-page .lm-lens-button { min-height: 44px; padding: 3px 1px; gap: 2px; }
+#lens-match-page .lm-lens-title { font-size: 12px; }
+#lens-match-page .lm-lens-distance { font-size: 10px; }
+#lens-match-page .lm-editor { margin-top: 4px; }
+#lens-match-page .lm-editor summary { min-height: 36px; padding: 10px 0 2px; }
+#lens-match-page .lm-editor[open] {
+    position: absolute;
+    z-index: 30;
+    inset: 70px 16px auto;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 16px;
+    background: var(--card-bg);
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.6);
+}
+#lens-match-page .lm-pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+#lens-match-page .lm-pager button { height: 36px; min-width: 44px; border: 1px solid #444; border-radius: 9px; color: white; background: #2C2C2E; font-size: 18px; }
+#lens-match-page .lm-pager span { color: var(--text-dim); font-size: 11px; }
+#sun-page .app-content { min-height: 0; overflow: hidden; padding-bottom: 8px; }
+#sun-page .row { margin-bottom: 10px; }
+#sun-page .segment-control { margin-bottom: 0; }
+#sun-page .sun-item { padding: 10px 16px; }
+#sun-page .sun-icon { padding: 8px; }
+#sun-page .sun-icon svg { width: 24px; height: 24px; }
+#sun-page #sun-date { margin-bottom: 0; }
+#sun-page .magic-grid { gap: 8px; }
+@media (max-height: 740px) {
+    #lens-match-page .app-header { padding-top: 4px; padding-bottom: 4px; }
+    #lens-match-page .lm-content { gap: 4px; }
+    #lens-match-page .ios-card { padding: 7px; }
+    #lens-match-page .lm-card-heading { margin-bottom: 3px; }
+    #lens-match-page #lm-result-value { font-size: 46px; }
+    #lens-match-page .lm-mode-switch button { min-height: 36px; }
+    #lens-match-page .lm-mode-switch { padding: 3px; margin-bottom: 5px; }
+    #lens-match-page #lm-unit { height: 28px; }
+    #lens-match-page .lm-note { font-size: 10px; line-height: 1.2; }
+    #lens-match-page label { font-size: 10px; margin-bottom: 3px; }
+    #sun-page .sun-item { padding: 8px 14px; }
+    #sun-page .magic-item { padding: 7px; }
+}
