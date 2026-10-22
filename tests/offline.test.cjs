@@ -12,14 +12,19 @@ function worker() {
     const cache = {
         async addAll(assets) {
             for (const asset of assets) {
-                const file = asset === './' ? 'index.html' : asset;
+                const relative = typeof asset === 'string' ? asset :
+                    './' + new URL(asset.url).pathname.slice(new URL(scope).pathname.length);
+                if (typeof asset !== 'string') assert.equal(asset.cache, 'reload');
+                const file = relative === './' ? 'index.html' : relative;
                 assert.ok(fs.existsSync(path.join(root, file)), `Missing offline asset: ${asset}`);
-                entries.set(new URL(asset, scope).href, file);
+                entries.set(new URL(relative, scope).href, file);
             }
         },
         async match(request) { return entries.get(new URL(request.url || request, scope).href); }
     };
     const context = {
+        URL,
+        Request: class { constructor(url, options) { this.url = String(url); this.cache = options.cache; } },
         self: {
             registration: { scope },
             addEventListener(name, callback) { handlers[name] = callback; },
@@ -28,7 +33,7 @@ function worker() {
         },
         caches: {
             async open() { return cache; },
-            async keys() { return ['ac-scouter-v4', 'ac-scouter-web-v12', 'ac-scouter-web-v14', 'other-app']; },
+            async keys() { return ['ac-scouter-v4', 'ac-scouter-web-v12', 'ac-scouter-web-v14', 'ac-scouter-web-v15', 'other-app']; },
             async delete(name) { removed.push(name); }
         },
         async fetch() { requests++; throw Error('offline'); }
@@ -61,6 +66,15 @@ test('offline navigations with a query still open the app; external APIs and wri
 
 test('an update retires only old AC Scouter caches without touching stored Marks or other apps', async () => {
     const app = worker(); await app.lifecycle('activate');
-    assert.deepEqual(app.removed, ['ac-scouter-v4', 'ac-scouter-web-v12']);
+    assert.deepEqual(app.removed, ['ac-scouter-v4', 'ac-scouter-web-v12', 'ac-scouter-web-v14']);
     assert.equal(app.counts().claims, 1);
+});
+
+// The browser can cache '/' and 'index.html' independently across deployments.
+test('both app entry URLs use the same current offline HTML, without a stale root alias', async () => {
+    const app = worker(); await app.lifecycle('install');
+    assert.equal(await app.request('./', 'navigate'), './index.html');
+    assert.equal(await app.request('index.html', 'navigate'), './index.html');
+    assert.equal(await app.request('./?release=new', 'navigate'), './index.html');
+    assert.equal(app.counts().requests, 0);
 });
