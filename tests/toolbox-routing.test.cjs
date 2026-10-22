@@ -67,10 +67,10 @@ function application(hash = '', fakeTimers = false) {
     };
 }
 
-test('each of the seven widget destinations opens its actual app page', () => {
+test('each tool destination opens its actual app page', () => {
     const app = application();
     const expected = {
-        film: 'calc-page', dof: 'dop-page', sun: 'sun-page', marks: 'wmm-list-page',
+        film: 'calc-page', dof: 'dop-page', lens: 'lens-match-page', sun: 'sun-page', marks: 'wmm-list-page',
         focus: 'focus-page', ciak: 'ciak-page', chroma: 'chroma-page', home: 'home-page'
     };
     for (const [tool, id] of Object.entries(expected)) {

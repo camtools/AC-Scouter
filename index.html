@@ -32,6 +32,7 @@
             <nav class="menu-list">
                 <button onclick="showPage('calc-page')">📟 FILM CALCULATOR</button>
                 <button onclick="showPage('dop-page')">🔍 <strong>D</strong>EPTH <strong>O</strong>F <strong>F</strong>IELD </button>
+                <button onclick="showPage('lens-match-page')">🔁 LENS MATCH</button>
                 <button onclick="showPage('sun-page')">☀️ SUN TRACKER</button>
                 <button onclick="openWmmList()">📐 MARKS</button>
                 <button onclick="showPage('focus-page')">🎯 FOCUS CHART</button>
@@ -176,6 +177,78 @@
                     <div id="hyperfocal-val">-</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="lens-match-page" class="page">
+        <div class="app-header">
+            <button class="back-btn" onclick="toggleMenu()" aria-label="Open tools menu">☰</button>
+            <h2>LENS MATCH</h2>
+        </div>
+        <div class="app-content lm-content">
+            <section class="ios-card lm-shot-card" aria-labelledby="lm-original-heading">
+                <div class="lm-card-heading">
+                    <h3 id="lm-original-heading">ORIGINAL SHOT</h3>
+                    <select id="lm-unit" aria-label="Distance unit">
+                        <option value="m">m</option>
+                        <option value="cm">cm</option>
+                        <option value="ft">ft</option>
+                    </select>
+                </div>
+                <div class="row-split">
+                    <div class="input-half">
+                        <label for="lm-original-focal">FOCAL LENGTH · mm</label>
+                        <input id="lm-original-focal" type="text" inputmode="decimal" maxlength="20" autocomplete="off" spellcheck="false" aria-label="Original focal length in mm" value="32">
+                    </div>
+                    <div class="input-half">
+                        <label for="lm-original-distance">DISTANCE · <span id="lm-distance-unit">m</span></label>
+                        <input id="lm-original-distance" type="text" inputmode="decimal" maxlength="20" autocomplete="off" spellcheck="false" aria-label="Original distance" aria-describedby="lm-feet-hint" value="1.50">
+                    </div>
+                </div>
+                <p id="lm-feet-hint" class="lm-field-hint" hidden>Enter distances in decimal feet.</p>
+            </section>
+
+            <section class="ios-card lm-new-shot" aria-label="New shot">
+                <div class="lm-mode-switch" role="group" aria-label="Match using">
+                    <button id="lm-mode-lens" type="button" aria-pressed="true">NEW LENS</button>
+                    <button id="lm-mode-distance" type="button" aria-pressed="false">NEW DISTANCE</button>
+                </div>
+                <div id="lm-lens-field">
+                    <label for="lm-new-focal">NEW FOCAL LENGTH · mm</label>
+                    <input id="lm-new-focal" type="text" inputmode="decimal" maxlength="20" autocomplete="off" spellcheck="false" aria-label="New focal length in mm" value="50">
+                </div>
+                <div id="lm-distance-field" hidden>
+                    <label for="lm-new-distance">AVAILABLE DISTANCE · <span id="lm-new-distance-unit">m</span></label>
+                    <input id="lm-new-distance" type="text" inputmode="decimal" maxlength="20" autocomplete="off" spellcheck="false" aria-label="New available distance" aria-describedby="lm-feet-hint" value="3.00">
+                </div>
+            </section>
+
+            <div class="lm-arrow" aria-hidden="true">↓</div>
+            <section class="ios-card result-card lm-result" aria-live="polite" aria-atomic="true">
+                <label id="lm-result-label" for="lm-result-value">NEW DISTANCE</label>
+                <div class="lm-result-line"><output id="lm-result-value">—</output><span id="lm-result-unit"></span></div>
+                <p id="lm-result-detail" class="lm-result-detail"></p>
+                <p class="lm-note">Maintains subject size in frame. Perspective changes with camera position.</p>
+            </section>
+
+            <section class="ios-card lm-available" aria-labelledby="lm-available-heading">
+                <h3 id="lm-available-heading">AVAILABLE LENSES</h3>
+                <div id="lm-focals" class="lm-lens-grid" role="group" aria-label="Available focal lengths and matching distances"></div>
+                <details id="lm-editor" class="lm-editor">
+                    <summary id="lm-editor-summary">Edit focal lengths</summary>
+                    <form id="lm-lens-form">
+                        <label for="lm-lens-list">FOCAL LENGTHS · mm</label>
+                        <textarea id="lm-lens-list" rows="2" spellcheck="false" aria-describedby="lm-list-hint lm-list-error"></textarea>
+                        <p id="lm-list-hint" class="lm-field-hint">Separate with spaces, commas or /. Use a dot for decimals.</p>
+                        <p id="lm-list-error" class="lm-list-error" role="alert"></p>
+                        <div class="lm-list-actions">
+                            <button type="submit">Save lenses</button>
+                            <button id="lm-reset-list" type="button">Reset list</button>
+                        </div>
+                    </form>
+                </details>
+            </section>
+            <p id="lm-storage-status" class="lm-field-hint" role="status" hidden>Storage unavailable. Changes are kept for this session only.</p>
         </div>
     </div>
 
@@ -581,6 +654,8 @@
     </div>
 
     <script src="script.js"></script>
+    <script src="lens-match-math.js"></script>
+    <script src="lens-match.js"></script>
     <script src="toolbox-routing.js"></script>
 </body>
 </html>

@@ -6,6 +6,10 @@ e dalla schermata Home di iPhone.
 ## Versione aggiornata
 
 - Film Calculator e Depth of Field con risultati compatti e comandi adatti al tocco.
+- Lens Match per mantenere approssimativamente la dimensione del soggetto nel frame:
+  nota la nuova focale, calcola la distanza; nota la nuova distanza, calcola la
+  focale teorica. Risultati in tempo reale, unità m/cm/ft, lettura feet/inches
+  e lista di focali modificabile, salvata localmente.
 - Sun Info per alba, tramonto e stime golden/blue hour.
 - Marks con schede, foto, posizione ed esportazione PDF; salvataggio locale.
 - Focus Chart e Chroma con sfondi fino ai bordi. La pressione prolungata dissolve
@@ -40,8 +44,26 @@ node --test tests/*.test.cjs
 
 Apri `http://localhost:8765/`. Il service worker richiede HTTPS o localhost.
 I collegamenti diretti usano `#tool=film`, `dof`, `sun`, `marks`, `focus`, `chroma`
-o `ciak`. Il codice e le immagini del calcolatore sono inclusi nel repository;
+o `ciak`; Lens Match usa `#tool=lens`. Il codice e le immagini del calcolatore sono inclusi nel repository;
 le API Open-Meteo sono utilizzate soltanto quando si richiedono i dati Sun Info.
 
 L'origine della registrazione del Ciak e la relativa licenza sono documentate in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Lens Match
+
+La logica riutilizzabile è in `lens-match-math.js`, l'interfaccia e la persistenza
+in `lens-match.js`. Il modulo matematico usa mm e metri, senza dipendere dal DOM.
+Per lo stesso formato/sensore e crop, la prima versione applica
+`D₂ = D₁ × F₂ / F₁` e l'inverso `F₂ = F₁ × D₂ / D₁`.
+
+Esempi: 32 mm a 1,50 m → 50 mm a 2,34 m; 32 mm a 1,50 m → 3,00 m con
+una focale teorica di 64 mm. Il rapporto delle focali è un'approssimazione
+per la dimensione del soggetto: spostare la camera cambia la prospettiva.
+Il confronto tra sensori/crop diversi non è implementato in questa versione.
+
+Valori e lista di focali sono conservati nella chiave `ac_scouter_lens_match_v1`,
+separata dalle schede Marks. Le distanze restano in metri internamente, senza
+arrotondare i calcoli della griglia. I campi numerici accettano sia punto sia
+virgola decimale; nell'editor della lista le virgole separano le focali e si usa
+il punto per eventuali decimali. Lo strumento funziona anche offline.

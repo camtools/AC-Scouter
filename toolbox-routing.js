@@ -5,6 +5,7 @@
     const pages = Object.freeze({
         film: 'calc-page',
         dof: 'dop-page',
+        lens: 'lens-match-page',
         sun: 'sun-page',
         marks: 'wmm-list-page',
         focus: 'focus-page',
